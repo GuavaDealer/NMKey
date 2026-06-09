@@ -1,0 +1,52 @@
+[versions]
+kotlin = "2.4.0"
+paper-api = "1.17-R0.1-SNAPSHOT"
+paper-api-compat-v1-v17 = "1.17-R0.1-SNAPSHOT"
+paper-api-compat-v1_v18v2 = "1.18.2-R0.1-SNAPSHOT"
+paper-api-compat-v1-v19v4 = "1.19.4-R0.1-SNAPSHOT"
+paper-api-compat-v1-v20v6 = "1.20.6-R0.1-SNAPSHOT"
+paper-api-compat-v1-v21v8 = "1.21.8-R0.1-SNAPSHOT"
+paper-api-compat-experimental = "26.1.2.build.+"
+minecraft = "1.21.8"
+
+gdPublish = "1.0.0-SNAPSHOT"
+
+ktor = "3.5.0"
+junit-jupiter = "6.0.1"
+mockbukkit = "1.13.0"
+maven-resolver-provider = "3.8.1"
+maven-resolver = "1.7.0"
+
+paperweight-userdev = "2.0.0-beta.21"
+shadow = "9.4.2"
+run-task = "3.0.2"
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+
+ktor-client = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+mockbukkit = { module = "com.github.seeseemelk:MockBukkit-v1.17", version.ref = "mockbukkit" }
+maven-resolver-provider = { module = "org.apache.maven:maven-resolver-provider", version.ref = "maven-resolver-provider" }
+maven-resolver-connector-basic = { module = "org.apache.maven.resolver:maven-resolver-connector-basic", version.ref = "maven-resolver" }
+maven-resolver-transport-http = { module = "org.apache.maven.resolver:maven-resolver-transport-http", version.ref = "maven-resolver" }
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-task" }
+gdPublish = { id = "com.guavadealer.plugins.GDPublish", version.ref = "gdPublish" }
+
+[bundles]
+ktor = [
+    "ktor-client",
+    "ktor-client-cio",
+    "ktor-client-content-negotiation",
+    "ktor-serialization",
+]

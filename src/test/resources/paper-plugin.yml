@@ -1,0 +1,6 @@
+name: NMKeyTest
+version: '${version}'
+
+main: com.nmcrate.key.tests.NMKeyTestPlugin
+api-version: '1.21.8'
+load: POSTWORLD
