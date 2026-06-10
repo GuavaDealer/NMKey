@@ -1,19 +1,13 @@
 package com.nmcrate.key
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.bukkit.plugin.java.JavaPlugin
 import java.net.InetAddress
 import java.net.NetworkInterface
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.security.KeyFactory
 import java.security.MessageDigest
@@ -21,6 +15,8 @@ import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.net.http.*
+import java.time.Duration
 
 /**
  * Singleton utility for managing license key validation and hardware fingerprinting for NMCrate plugins.
@@ -29,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap
  * sessions, and ensure the integrity of responses using Ed25519 digital signatures. It maintains an
  * internal cache for public keys and license strings to minimize network overhead and I/O operations.
  *
- * @author Idan Nehama (GuavaDealer)
+ * @author Idan Nehama (GuavaDealer) and QrackyDev (Qracky)
  * @since 1.0.0
  */
 object NMKey {
@@ -41,18 +37,15 @@ object NMKey {
      */
     const val DEFAULT_API_URL = "https://www.nmcrate.com/api/nmkey/v1"
 
+    val requestTimeout = Duration.ofMillis(7500)
+
     private val publicKeys = ConcurrentHashMap<String, String>()
     private val cachedKeys = ConcurrentHashMap<String, String>()
     private val json = Json { ignoreUnknownKeys = true }
     private val client by lazy {
-        HttpClient(CIO) {
-            install(ContentNegotiation) { json(json) }
-            install(HttpTimeout) {
-                connectTimeoutMillis = 3_000
-                requestTimeoutMillis = 7_500
-                socketTimeoutMillis = 7_500
-            }
-        }
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(3000))
+            .build()
     }
     private val keyFactory = KeyFactory.getInstance("Ed25519")
     private val base64Decoder: Base64.Decoder = Base64.getDecoder()
@@ -126,10 +119,14 @@ object NMKey {
                 val nonce = UUID.randomUUID().toString()
 
                 pl.logger.info("NMKey: sending validation request to $DEFAULT_API_URL/validate.")
-                val res = client.post("$DEFAULT_API_URL/validate") {
-                    contentType(ContentType.Application.Json)
-                    setBody(KeyRequest(pluginId, key, fp, nonce))
-                }.body<KeyResponse>()
+                val body = json.encodeToString(KeyRequest(pluginId, key, fp, nonce))
+                val request = HttpRequest.newBuilder()
+                    .uri(URI("$DEFAULT_API_URL/validate"))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .header("Content-Type", "application/json")
+                    .build()
+                val responseBody = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).get().body()
+                val res = json.decodeFromString<KeyResponse>(responseBody)
 
                 val canonical = "v1|$pluginId|$key|$fp|${res.status}|$nonce|${res.issuedAt}"
                 val valid = res.status.equals("valid", ignoreCase = true) &&
@@ -169,10 +166,12 @@ object NMKey {
         runCatching {
             runBlocking {
                 val key = readKey(pl) ?: return@runBlocking
-                client.post("$DEFAULT_API_URL/release") {
-                    contentType(ContentType.Application.Json)
-                    setBody(KeyRequest(pluginId, key, fingerprint(pl)))
-                }
+                val body = json.encodeToString(KeyRequest(pluginId, key, fingerprint(pl)))
+                val request = HttpRequest.newBuilder()
+                    .uri(URI("$DEFAULT_API_URL/releases"))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build()
+                client.sendAsync(request, HttpResponse.BodyHandlers.discarding())
             }
         }
     }
@@ -232,9 +231,12 @@ object NMKey {
         }
 
         pl.logger.info("NMKey: fetching public key from $DEFAULT_API_URL/public-key.")
-        val fetched = client.get("$DEFAULT_API_URL/public-key") { parameter("pluginId", pluginId) }
-            .body<String>()
-            .removePemPublicKeyHeaders()
+        val request = HttpRequest.newBuilder()
+            .uri(URI("$DEFAULT_API_URL/public-key?pluginId=\$encodedPluginId"))
+            .timeout(requestTimeout)
+            .GET()
+            .build()
+        val fetched = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await().body().removePemPublicKeyHeaders()
 
         publicKeys[pluginId] = fetched
         pl.logger.info("NMKey: public key fetched and cached.")

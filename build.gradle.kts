@@ -29,7 +29,6 @@ repositories {
 
 @Suppress("VulnerableLibrariesLocal")
 dependencies {
-    implementation(libs.bundles.ktor)
     compileOnly(libs.paper.api)
 
     testImplementation(libs.kotlin.test)

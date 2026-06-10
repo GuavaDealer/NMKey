@@ -11,7 +11,6 @@ minecraft = "1.21.8"
 
 gdPublish = "1.0.0-SNAPSHOT"
 
-ktor = "3.5.0"
 junit-jupiter = "6.0.1"
 mockbukkit = "1.13.0"
 maven-resolver-provider = "3.8.1"
@@ -23,11 +22,6 @@ run-task = "3.0.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-
-ktor-client = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
@@ -42,11 +36,3 @@ kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", vers
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-task" }
 gdPublish = { id = "com.guavadealer.plugins.GDPublish", version.ref = "gdPublish" }
-
-[bundles]
-ktor = [
-    "ktor-client",
-    "ktor-client-cio",
-    "ktor-client-content-negotiation",
-    "ktor-serialization",
-]
