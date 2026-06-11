@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- **Automated Lifecycle**: Implemented `PluginDisableEvent` listeners to automate session cleanup; manual `release()` calls in `onDisable` are no longer required.
+- **Configurable Behavior**: Introduced `NMKey.Config` to allow global adjustment of cache TTL, grace period durations, and automatic release toggles.
+- **Footprint Optimization**: Refactored core logic into `internal` classes to encapsulate implementation details and reduce the public API surface.
+- **Thread Safety**: Resolved coroutine dispatcher conflicts and migrated HTTP operations to a dedicated daemon thread pool to prevent main thread blocking.
+
 ## 1.0.0
 
 - Initial NMKey release for NMCrate plugin license validation.

@@ -8,12 +8,12 @@ import org.bukkit.plugin.PluginDescriptionFile
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.plugin.java.JavaPluginLoader
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
 import java.io.File
-import java.time.Instant
-import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.time.Clock
 
 @Tag("integration")
 class NMKeyIntegrationTest {
@@ -67,7 +67,8 @@ class NMKeyIntegrationTest {
         } finally {
             if (session.valid) {
                 log("Kotlin extension release request starting")
-                session.release()
+                // explicitly pass the plugin instance
+                session.release(plugin)
                 log("Kotlin extension release request completed")
             } else {
                 log("Kotlin extension release skipped because verification failed")
@@ -75,11 +76,31 @@ class NMKeyIntegrationTest {
         }
     }
 
+    @Test
+    fun `successful validation creates offline cache`() {
+        val dataDir = File(plugin.dataFolder, "data")
+        val cacheFile = File(dataDir, "${plugin.name}-cache.dat")
+        if (cacheFile.exists()) {
+            cacheFile.delete()
+        }
+
+        val verified = NMKey.check(plugin, PLUGIN_ID)
+        assertTrue(verified, "Verification should be successful")
+        assertTrue(cacheFile.exists(), "Offline cache file should be created after successful validation")
+
+        NMKey.release(plugin, PLUGIN_ID)
+    }
+
+    @Test
+    fun `shutdown closes client and clears cache`() {
+        NMKey.shutdown()
+    }
+
     private companion object {
         private const val PLUGIN_ID = "d486742f"
 
         private fun log(message: String) {
-            println("[${Instant.now()}] [NMKeyIntegrationTest] $message")
+            println("[${Clock.System.now()}] [NMKeyIntegrationTest] $message")
         }
     }
 }

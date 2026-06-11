@@ -1,105 +1,69 @@
 # NMKey
 
-NMKey is the officially endorsed lightweight Kotlin/JVM companion library for validating NMCrate plugin license keys from Paper server plugins.
+NMKey is the officially endorsed, ultra-lightweight Kotlin/JVM companion library for validating NMCrate plugin license keys from Paper server plugins.
 
-NMCrate is a Minecraft plugin store by NexoMaker. NMKey handles server fingerprinting, secure communication with the NMCrate license API, and Ed25519 response-signature verification.
+NMCrate is a Minecraft plugin store by NexoMaker.
+NMKey handles server fingerprinting, secure communication with NMCrate's NMKey API, AES-GCM encrypted offline grace periods, and Ed25519 response-signature verification.
 
 If your project requires this library, it likely requires obfuscation. We strongly recommend obfuscating both your plugin and this bundled dependency.
 
 ## Features
 
-- **Server Fingerprinting**: Identifies the server using hostname, MAC address, and server port.
+- **Ultra-Lightweight**: No networking bloat, no Ktor, and no background coroutine dispatchers. Relies purely on the native Java 17 `HttpClient` and the Bukkit API.
+- **Idiomatic Kotlin**: Uses `kotlinx.serialization` for lightning-fast, compile-time JSON parsing without the heavy footprint of runtime reflection.
+- **Dynamic Fingerprinting**: Identifies the server using purely in-memory JVM heuristics (processors, OS arch, server port) to prevent seat spoofing in containerized environments.
+- **Offline Grace Period**: Generates a 256-bit AES encrypted cache mapped to the server's fingerprint. Survives API outages for up to 48 hours.
 - **Cryptographic Verification**: Verifies signed API responses using Ed25519 to prevent tampering.
-- **Automated Lifecycle Management**: Validates upon start and can optionally release the key slot upon plugin shutdown.
-- **Developer-Friendly**: Provides both Kotlin convenience extensions and a straightforward Java API.
-- **Bundled Resource Integration**: Automatically reads `nmkey.txt` directly from the plugin's jar.
+- **Self-Cleaning Architecture**: Hooks into Bukkit's `PluginDisableEvent` to automatically release license seats and destroy HTTP threads during server reloads.
 
 ## Requirements
 
 - **Java**: 17+ (Java 25 required to run the bundled Paper test server task)
 - **Paper API**: 1.17+
-- **Gradle**: 9.5.1 (Wrapper included)
+- **Kotlin**: 2.4+ (Standard Library and Serialization)
 
-## Installation & Coordinates
+## Security & Obfuscation (Crucial)
 
-Release coordinates:
+Because NMKey is a client-side shaded library, the cryptographic verification only protects against network-level spoofing. If a malicious user opens your compiled JAR in a bytecode editor (like Recaf), they can simply delete the `NMKey.check()` call and bypass the licensing entirely.
+
+To secure your plugin, you **must** run your final compiled JAR through an obfuscator (such as ProGuard, Zelix KlassMaster, or Stringer) and ensure that the shaded `com.nmcrate.key` package is heavily obfuscated.
+
+- Use **Control Flow Obfuscation** to scramble the signature checking logic.
+- Use **String Encryption** to hide the `https://www.nmcrate.com` API endpoints and JSON keys.
+
+## Installation
 
 ```kotlin
-group = "com.nmcrate.key"
-version = "1.0.0"
-```
-
-Gradle Kotlin DSL:
-
-```kotlin
-repositories {
-    maven("https://nmcrate.com/reposilite/releases")
-}
-
 dependencies {
-    implementation("com.nmcrate.key:NMKey:1.0.0")
-}
-```
-
-NMKey is published as a minimized bundled artifact. Consumers should include it in their plugin jar instead of expecting Paper to provide NMKey, Ktor, or Kotlin runtime classes at server runtime.
-
-Example with Shadow:
-
-```kotlin
-plugins {
-    id("com.gradleup.shadow") version "9.4.2"
-}
-
-dependencies {
-    implementation("com.nmcrate.key:NMKey:1.0.0")
-}
-
-tasks.shadowJar {
-    relocate("com.nmcrate.key", "your.plugin.libs.nmkey")
-    relocate("io.ktor", "your.plugin.libs.ktor")
-    relocate("kotlin", "your.plugin.libs.kotlin")
-    relocate("kotlinx", "your.plugin.libs.kotlinx")
+    implementation("com.nmcrate.key:NMKey:1.1.0")
 }
 ```
 
 ## Usage
 
-### License Key Resource
+NMKey is designed as a "fire-and-forget" library. Because of the **Self-Cleaning Architecture**, you do not need to perform manual cleanup in `onDisable()`.
 
-NMCrate automatically injects the license key into the plugin jar when downloaded.
-NMKey expects to find an `nmkey.txt` file at the root of the jar's resources, which it will read, trim, and cache in memory via `JavaPlugin#getResource("nmkey.txt")`.
-
-### Kotlin
-
-NMKey provides small extension functions for Kotlin users.
+### Kotlin (One-Liner)
 
 ```kotlin
-import com.nmcrate.key.nmKey
-import com.nmcrate.key.releaseNmKey
+import com.nmcrate.key.nmKeyAsync
 import org.bukkit.plugin.java.JavaPlugin
 
 class MyPlugin : JavaPlugin() {
-    private lateinit var keySession: com.nmcrate.key.NMKeySession
-
     override fun onEnable() {
-        server.scheduler.runTaskAsynchronously(
-            this,
-            Runnable {
-                keySession = nmKey("your-plugin-id")
-                keySession.disablePluginTaskIfInvalid()
-            }
-        )
-    }
-
-    override fun onDisable() {
-        releaseNmKey("your-plugin-id")
+        // Validates async, handles disabling on failure, and auto-cleans on shutdown.
+        nmKeyAsync("your-plugin-id")
     }
 }
 ```
 
-### Java
+With the library's shift to a "fire-and-forget" Kotlin model and the introduction of automated cleanup, the Java implementation has become significantly cleaner as well. Java developers no longer need to manually manage the `shutdown` or `release` cycles in `onDisable()`.
 
-For Java developers, NMKey offers a simple static API.
+Here is the updated **Java Usage** section for your `README.md`.
+
+### Java Usage
+
+For Java developers, NMKey offers a simple static API. You should wrap the `check` method in Bukkit's async scheduler. Because NMKey is **Self-Cleaning**, you do not need to perform manual cleanup in `onDisable()`.
 
 ```java
 import com.nmcrate.key.NMKey;
@@ -111,48 +75,58 @@ public final class MyPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            if (!NMKey.check(this, PLUGIN_ID)) {
-                getLogger().severe("Invalid license key. Disabling plugin...");
-                getServer().getScheduler().runTask(this, () ->
-                        getServer().getPluginManager().disablePlugin(this)
-                );
-            }
-        });
-    }
+            // NMKey will automatically release the license seat on shutdown
+            // if Config.autoReleaseOnDisable is true (default).
+            boolean valid = NMKey.check(this, PLUGIN_ID);
 
-    @Override
-    public void onDisable() {
-        NMKey.release(this, PLUGIN_ID);
+            getServer().getScheduler().runTask(this, () -> {
+                if (!valid && NMKey.Config.getAutoDisablePlugin()) {
+                    getLogger().severe("Invalid license key. Disabling plugin...");
+                    getServer().getPluginManager().disablePlugin(this);
+                }
+            });
+        });
     }
 }
 ```
 
-## How It Works (API Behavior)
+### Configuration
+
+Customize library behavior globally before validation:
+
+```kotlin
+NMKey.Config.useOfflineCache = true
+NMKey.Config.gracePeriodHours = 24L
+NMKey.Config.autoDisablePlugin = true
+NMKey.Config.autoReleaseOnDisable = true
+```
+
+## How It Works
 
 ### Validation (`NMKey.check`)
 
-1. **Public Key Fetch**: Fetches and caches the plugin's public key from `/public-key?pluginId=...`.
-2. **Resource Load**: Reads and caches the `nmkey.txt` bundled within the jar.
-3. **Fingerprinting**: Generates a server fingerprint using the machine's hostname, MAC address, and server port.
-4. **Validation Request**: Posts the license key, fingerprint, plugin ID, and a nonce to `/validate`.
-5. **Verification**: Accepts the response *only* if the status is `valid` and the Ed25519 signature perfectly matches the payload.
-6. **Result**: Returns `false` on missing keys, invalid responses, network failures, request timeouts, or signature validation failures.
+1. **Public Key Fetch**: Fetches the plugin's public key from the API.
+2. **Resource Load**: Reads the `nmkey.txt` bundled within the jar.
+3. **Dynamic Fingerprinting**: Generates an in-memory heuristic hash of the host container.
+4. **Validation Request**: Posts the payload and a nonce to the validation endpoint.
+5. **Verification & Caching**: If valid, verifies the Ed25519 signature and encrypts the response to the local file system using the hardware fingerprint as an AES-GCM key.
+6. **Grace Period**: If the network request fails or times out, attempts to decrypt the local cache. If the fingerprint matches and the cache is less than the configured `gracePeriodHours` old, validation succeeds offline.
 
-`NMKey.check` and `NMKey.release` are blocking calls. Run validation asynchronously from the plugin startup unless you intentionally want startup to wait for license validation. NMKey applies explicit connect/request/socket timeouts so network failure does not hang indefinitely.
+`NMKey.check` and `NMKey.release` are blocking calls. Run validation asynchronously from the plugin startup using the provided Kotlin extensions or manually wrap them in Bukkit runnables.
 
 ### Release (`NMKey.release`)
 
-Posts the key and fingerprint to `/release` to immediately free the license slot when the server shuts down. Release is recommended for plugins that want shutdown to free a license seat promptly.
+Posts the key and fingerprint to `/release` to immediately free the license slot when the server shuts down. This method runs synchronously and explicitly destroys the internal HTTP client thread pool to prevent memory leaks during `/reload`. **This is now handled automatically by the Self-Cleaning listener.**
 
 ## Development & Testing
 
 ### Project Layout
 
-- `src/main/kotlin/com/nmcrate/key/NMKey.kt` - Static Java validation API
+- `src/main/kotlin/com/nmcrate/key/NMKey.kt` - Main validation API
 - `src/main/kotlin/com/nmcrate/key/NMKeyExtensions.kt` - Kotlin convenience extensions
+- `src/main/kotlin/com/nmcrate/key/NMKeyConfig.kt` - Global configuration settings
+- `src/main/kotlin/com/nmcrate/key/NMKeyModels.kt` - Serialization data objects
 - `src/test/kotlin/com/nmcrate/key/tests/NMKeyTestPlugin.kt` - Runnable Paper test plugin
-- `src/test/resources/nmkey.txt` - Sample license key used by the test plugin
-- `src/test/resources/paper-plugin.yml` - Test plugin descriptor
 
 ### Compatibility Checks
 

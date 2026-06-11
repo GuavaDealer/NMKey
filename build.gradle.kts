@@ -29,7 +29,7 @@ repositories {
 
 @Suppress("VulnerableLibrariesLocal")
 dependencies {
-    implementation(libs.bundles.ktor)
+    api(libs.kotlinx.serialization.json)
     compileOnly(libs.paper.api)
 
     testImplementation(libs.kotlin.test)

@@ -1,5 +1,8 @@
 package com.nmcrate.key.tests;
 
+import com.nmcrate.key.Config;
+import com.nmcrate.key.KeyRequest;
+import com.nmcrate.key.KeyResponse;
 import com.nmcrate.key.NMKey;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +18,19 @@ class NMKeyJavaApiTest {
     }
 
     @Test
+    void exposesConfigGracePeriodToJava() {
+        // Test the default value
+        assertEquals(48L, Config.getGracePeriodHours());
+
+        // Test mutability from Java
+        Config.setGracePeriodHours(24L);
+        assertEquals(24L, Config.getGracePeriodHours());
+
+        // Reset to default
+        Config.setGracePeriodHours(48L);
+    }
+
+    @Test
     void doesNotExposeCustomApiEndpointOverloadsToJava() {
         boolean exposesCustomEndpoint = Arrays.stream(NMKey.class.getDeclaredMethods())
                 .filter(method -> method.getName().equals("check") || method.getName().equals("release"))
@@ -25,7 +41,7 @@ class NMKeyJavaApiTest {
 
     @Test
     void exposesRequestDtoToJava() {
-        NMKey.KeyRequest request = new NMKey.KeyRequest(
+        KeyRequest request = new KeyRequest(
                 "plugin-id",
                 "license-key",
                 "fingerprint",
@@ -40,7 +56,7 @@ class NMKeyJavaApiTest {
 
     @Test
     void exposesResponseDtoToJava() {
-        NMKey.KeyResponse response = new NMKey.KeyResponse("valid", "2026-06-08T00:00:00Z", "signature");
+        KeyResponse response = new KeyResponse("valid", "2026-06-08T00:00:00Z", "signature");
 
         assertEquals("valid", response.getStatus());
         assertEquals("2026-06-08T00:00:00Z", response.getIssuedAt());
@@ -50,5 +66,10 @@ class NMKeyJavaApiTest {
     @Test
     void clearCacheIsJavaCallable() {
         NMKey.clearCache();
+    }
+
+    @Test
+    void shutdownIsJavaCallable() {
+        NMKey.shutdown();
     }
 }
