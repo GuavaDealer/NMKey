@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.4.0"
+kotlinx = "1.11.0"
 paper-api = "1.17-R0.1-SNAPSHOT"
 paper-api-compat-v1-v17 = "1.17-R0.1-SNAPSHOT"
 paper-api-compat-v1_v18v2 = "1.18.2-R0.1-SNAPSHOT"
@@ -22,6 +23,8 @@ run-task = "3.0.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx" }
 
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
@@ -29,6 +32,9 @@ mockbukkit = { module = "com.github.seeseemelk:MockBukkit-v1.17", version.ref = 
 maven-resolver-provider = { module = "org.apache.maven:maven-resolver-provider", version.ref = "maven-resolver-provider" }
 maven-resolver-connector-basic = { module = "org.apache.maven.resolver:maven-resolver-connector-basic", version.ref = "maven-resolver" }
 maven-resolver-transport-http = { module = "org.apache.maven.resolver:maven-resolver-transport-http", version.ref = "maven-resolver" }
+
+[bundles]
+kotlinx = ["kotlinx-coroutines", "kotlinx-serialization"]
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

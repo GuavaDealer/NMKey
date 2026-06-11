@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.URI
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.KeyFactory
 import java.security.MessageDigest
@@ -25,7 +26,8 @@ import java.time.Duration
  * sessions, and ensure the integrity of responses using Ed25519 digital signatures. It maintains an
  * internal cache for public keys and license strings to minimize network overhead and I/O operations.
  *
- * @author Idan Nehama (GuavaDealer) and QrackyDev (Qracky)
+ * @author Idan Nehama (GuavaDealer)
+ * @author QrackyDev (Qracky)
  * @since 1.0.0
  */
 object NMKey {
@@ -37,7 +39,7 @@ object NMKey {
      */
     const val DEFAULT_API_URL = "https://www.nmcrate.com/api/nmkey/v1"
 
-    val requestTimeout = Duration.ofMillis(7500)
+    val requestTimeout: Duration = Duration.ofMillis(7500)
 
     private val publicKeys = ConcurrentHashMap<String, String>()
     private val cachedKeys = ConcurrentHashMap<String, String>()
@@ -231,8 +233,9 @@ object NMKey {
         }
 
         pl.logger.info("NMKey: fetching public key from $DEFAULT_API_URL/public-key.")
+        val encodedPluginId = URLEncoder.encode(pluginId, StandardCharsets.UTF_8)
         val request = HttpRequest.newBuilder()
-            .uri(URI("$DEFAULT_API_URL/public-key?pluginId=\$encodedPluginId"))
+            .uri(URI("$DEFAULT_API_URL/public-key?pluginId=$encodedPluginId"))
             .timeout(requestTimeout)
             .GET()
             .build()
@@ -269,7 +272,7 @@ object NMKey {
                 .digest(raw.toByteArray(StandardCharsets.UTF_8))
                 .joinToString("") { byte -> "%02x".format(byte) }
                 .take(32)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return "0"
         }
     }

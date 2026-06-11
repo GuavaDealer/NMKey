@@ -30,6 +30,7 @@ repositories {
 @Suppress("VulnerableLibrariesLocal")
 dependencies {
     compileOnly(libs.paper.api)
+    implementation(libs.bundles.kotlinx)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit.jupiter)

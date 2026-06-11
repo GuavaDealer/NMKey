@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin
  * @param valid Whether the key validation was successful.
  *
  * @author Idan Nehama (GuavaDealer)
+ * @author QrackyDev (Qracky)
  * @since 1.0.0
  */
 class NMKeySession internal constructor(
