@@ -194,4 +194,15 @@ NMKey is released under the Apache License 2.0. See `LICENSE`.
       </a>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/QrackyDev">
+        <img src="https://github.com/QrackyDev.png" width="128" height="128" style="border-radius: 50%;"  alt="QrackyDev Logo"/>
+        <br />
+        <b>QrackyDev</b>
+        <br />
+        Contributor
+      </a>
+    </td>
+  </tr>
 </table>
