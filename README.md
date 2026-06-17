@@ -57,10 +57,6 @@ class MyPlugin : JavaPlugin() {
 }
 ```
 
-With the library's shift to a "fire-and-forget" Kotlin model and the introduction of automated cleanup, the Java implementation has become significantly cleaner as well. Java developers no longer need to manually manage the `shutdown` or `release` cycles in `onDisable()`.
-
-Here is the updated **Java Usage** section for your `README.md`.
-
 ### Java Usage
 
 For Java developers, NMKey offers a simple static API. You should wrap the `check` method in Bukkit's async scheduler. Because NMKey is **Self-Cleaning**, you do not need to perform manual cleanup in `onDisable()`.
